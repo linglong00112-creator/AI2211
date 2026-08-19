@@ -122,3 +122,30 @@ def get_live_ticker_text(symbol_name: str) -> Optional[str]:
         f"━━━━━━━━━━━━━━━━\n"
         f"🏷️ ប្រភេទ: {data['category']} {arrow}"
     )
+def get_real_news(symbol_name: str = "", limit: int = 10) -> list[str]:
+    """ទាញយកចំណងជើងព័ត៌មានពិត (Real-time Headlines) ពីទីផ្សារដោយប្រើ yfinance"""
+    try:
+        # yf និង MARKETS ត្រូវបាន import រួចហើយនៅខាងលើឯកសារ
+        if not symbol_name:
+            # បើគ្មាន Symbol ជាក់លាក់ យកព័ត៌មានទីផ្សារទូទៅ (ប្រើសន្ទស្សន៍ S&P 500 ជាតំណាង)
+            ticker = yf.Ticker("^GSPC") 
+        else:
+            market = MARKETS.get(symbol_name.upper())
+            if not market:
+                return []
+            ticker = yf.Ticker(market.yahoo_symbol)
+
+        news_data = ticker.news
+        headlines = []
+        
+        # ទាញយកតែចំណងជើង និងប្រភពព័ត៌មាន
+        for article in news_data[:limit]:
+            title = article.get("title", "")
+            publisher = article.get("publisher", "")
+            if title:
+                headlines.append(f"{title} (Source: {publisher})")
+                
+        return headlines
+    except Exception as e:
+        print(f"Error fetching news for {symbol_name}: {e}")
+        return []
