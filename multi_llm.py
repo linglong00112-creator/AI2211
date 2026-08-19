@@ -253,11 +253,19 @@ Be concise and data-driven. Respond in this exact JSON format:
   "stop_loss": "price or %",
   "take_profit": "price or %",
   "summary": "one-line trade thesis"
+  "gpt-4o": 1.5,          # Tier 1 - Smartest
+    "deepseek-r1": 1.5,     # Tier 1 - Strong reasoning
+    "claude-sonnet": 1.4,   # Tier 1.5
+    "gpt-4-turbo": 1.3,
+    "gemini-flash": 1.2,    # Tier 2 - Fast
+    "llama3.3-70b": 1.0,    # Tier 3 - Baseline
+    "default": 1.0
 }
 """
 
 
 async def multi_model_consensus(
+    
     symbol: str,
     market_name: str,
     price: float,
@@ -266,9 +274,7 @@ async def multi_model_consensus(
     additional_context: str = "",
 ) -> Dict:
     """
-    Run analysis across multiple available LLMs and build a consensus.
-
-    Returns aggregated result with model-by-model breakdown.
+    Run analysis across multiple available LLMs and build a consensus using Weighted Conviction Score.
     """
     user_prompt = f"""Analyze {symbol} ({market_name}):
 
@@ -287,7 +293,7 @@ Provide your trading analysis in the specified JSON format."""
     # Always include Groq (we know it works)
     groq_result = await _call_groq_llm(CONSENSUS_SYSTEM_PROMPT, user_prompt)
     if groq_result:
-        parsed = _parse_consensus_response(groq_result, "Groq-Llama3.3-70B")
+        parsed = _parse_consensus_response(groq_result, "groq-llama3.3-70b")
         if parsed:
             results["groq-llama3.3-70b"] = parsed
 
@@ -312,31 +318,56 @@ Provide your trading analysis in the specified JSON format."""
     if not results:
         return {"error": "No models available. Add API keys to .env", "available_providers": list(available.keys())}
 
-    # Aggregate consensus
-    directions = [r["direction"] for r in results.values()]
-    confidences = [r["confidence"] for r in results.values()]
+    # ==========================================
+    # យន្តការថ្មី: Weighted Conviction Scoring
+    # ==========================================
+    buy_conviction = 0.0
+    sell_conviction = 0.0
+    hold_conviction = 0.0
+    
+    buy_count, sell_count, hold_count = 0, 0, 0
+    total_confidence = 0
 
-    buy_count = directions.count("BUY")
-    sell_count = directions.count("SELL")
-    hold_count = directions.count("HOLD")
+    for model_name, r in results.items():
+        # កំណត់ទម្ងន់ផ្អែកលើឈ្មោះម៉ូដែល
+        weight = MODEL_WEIGHTS.get("default", 1.0)
+        for key, w in MODEL_WEIGHTS.items():
+            if key in model_name.lower():
+                weight = w
+                break
+        
+        confidence = r.get("confidence", 50)
+        total_confidence += confidence
+        
+        # ពិន្ទុភាពជឿជាក់ = ទម្ងន់ x ភាគរយទំនុកចិត្ត
+        score = weight * confidence
+        
+        direction = r["direction"]
+        if direction == "BUY":
+            buy_conviction += score
+            buy_count += 1
+        elif direction == "SELL":
+            sell_conviction += score
+            sell_count += 1
+        else:
+            hold_conviction += score
+            hold_count += 1
 
-    # Determine consensus direction
-    if buy_count > sell_count and buy_count > hold_count:
+    # គណនាទិសដៅចុងក្រោយដោយពឹងផ្អែកលើពិន្ទុ
+    total_conviction = buy_conviction + sell_conviction + hold_conviction
+    max_conviction = max(buy_conviction, sell_conviction, hold_conviction)
+
+    if max_conviction == buy_conviction and buy_conviction > 0:
         consensus_dir = "BUY"
-        agreement = buy_count / len(directions) * 100
-    elif sell_count > buy_count and sell_count > hold_count:
+    elif max_conviction == sell_conviction and sell_conviction > 0:
         consensus_dir = "SELL"
-        agreement = sell_count / len(directions) * 100
     else:
         consensus_dir = "HOLD"
-        agreement = hold_count / len(directions) * 100 if hold_count > 0 else (max(buy_count, sell_count) / len(directions) * 100)
 
-    avg_confidence = sum(confidences) / len(confidences) if confidences else 50
-
-    # Weighted by confidence
-    weighted_buy = sum(r["confidence"] for r in results.values() if r["direction"] == "BUY")
-    weighted_sell = sum(r["confidence"] for r in results.values() if r["direction"] == "SELL")
-    weighted_score = (weighted_buy - weighted_sell) / max(weighted_buy + weighted_sell, 1) * 100
+    # គណនាភាគរយនៃការយល់ស្រប (Agreement) ផ្អែកលើទម្ងន់
+    agreement = (max_conviction / total_conviction * 100) if total_conviction > 0 else 0
+    avg_confidence = total_confidence / len(results) if results else 50
+    weighted_score = ((buy_conviction - sell_conviction) / max(total_conviction, 1)) * 100
 
     # Collect all reasons
     all_reasons = []
@@ -356,12 +387,14 @@ Provide your trading analysis in the specified JSON format."""
         "per_model": results,
         "key_reasons": all_reasons[:8],
         "strength": (
-            "🔥 VERY STRONG" if agreement >= 80 and avg_confidence >= 70
-            else "💪 STRONG" if agreement >= 60
+            "🔥 VERY STRONG" if agreement >= 75 and avg_confidence >= 70
+            else "💪 STRONG" if agreement >= 55
             else "⚖️ MIXED" if agreement >= 40
             else "🤔 WEAK — Model Disagreement"
         ),
         "timestamp": datetime.now().isoformat(),
+    }
+
     }
 
 
