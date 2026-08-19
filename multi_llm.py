@@ -261,8 +261,16 @@ Be concise and data-driven. Respond in this exact JSON format:
     "llama3.3-70b": 1.0,    # Tier 3 - Baseline
     "default": 1.0
 }
+MODEL_WEIGHTS = {
+    "gpt-4o": 1.5,          # Tier 1 - Smartest
+    "deepseek-r1": 1.5,     # Tier 1 - Strong reasoning
+    "claude-sonnet": 1.4,   # Tier 1.5
+    "gpt-4-turbo": 1.3,
+    "gemini-flash": 1.2,    # Tier 2 - Fast
+    "llama3.3-70b": 1.0,    # Tier 3 - Baseline
+    "default": 1.0
+    }
 """
-
 
 async def multi_model_consensus(
     
