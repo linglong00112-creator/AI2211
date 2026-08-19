@@ -499,14 +499,23 @@ async def cmd_news(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     processing = await update.message.reply_text(
-        f"📰 *កំពុងវិភាគព័ត៌មាន{'សម្រាប់ ' + symbol if symbol else ''}...*\nសូមរង់ចាំ ⏳",
+        f"📰 *កំពុងទាញយក និងវិភាគព័ត៌មានពិត{'សម្រាប់ ' + symbol if symbol else 'ទីផ្សារទូទៅ'}...*\nសូមរង់ចាំ ⏳",
         parse_mode="Markdown"
     )
 
     try:
-        headlines = [f"{symbol} market analysis and trends today"] if symbol else ["Forex gold crypto market news today"]
+        # ១. ទាញយកព័ត៌មានពិតពី market_data.py
+        from market_data import get_real_news
+        headlines = get_real_news(symbol, limit=10)
+        
+        # ២. ប្រសិនបើអ៊ីនធឺណិតមានបញ្ហា ប្រើ Fallback កុំឱ្យគាំង
+        if not headlines:
+            headlines = [f"{symbol} market analysis and trends today"] if symbol else ["Forex gold crypto market news today"]
+
+        # ៣. បញ្ជូន Headlines ពិតទៅឱ្យ AI វិភាគមនោសញ្ចេតនា (Sentiment)
         sentiment = await analyze_news_sentiment(headlines, symbol)
         msg = format_news_sentiment_message(sentiment, symbol)
+        
         await processing.delete()
         await update.message.reply_text(msg, parse_mode="Markdown")
     except Exception as e:
