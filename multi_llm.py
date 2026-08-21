@@ -19,7 +19,6 @@ import asyncio
 import logging
 from typing import Optional, Dict, List, Tuple
 from datetime import datetime
-
 import aiohttp
 
 logger = logging.getLogger(__name__)
