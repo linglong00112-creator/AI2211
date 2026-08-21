@@ -234,6 +234,8 @@ async def _call_groq_llm(
 
 # ==================== MULTI-MODEL CONSENSUS ====================
 
+# ==================== MULTI-MODEL CONSENSUS ====================
+
 CONSENSUS_SYSTEM_PROMPT = """You are a professional institutional trading analyst with 20+ years experience at top hedge funds.
 Analyze the market data and provide:
 
@@ -253,14 +255,9 @@ Be concise and data-driven. Respond in this exact JSON format:
   "stop_loss": "price or %",
   "take_profit": "price or %",
   "summary": "one-line trade thesis"
-  "gpt-4o": 1.5,          # Tier 1 - Smartest
-    "deepseek-r1": 1.5,     # Tier 1 - Strong reasoning
-    "claude-sonnet": 1.4,   # Tier 1.5
-    "gpt-4-turbo": 1.3,
-    "gemini-flash": 1.2,    # Tier 2 - Fast
-    "llama3.3-70b": 1.0,    # Tier 3 - Baseline
-    "default": 1.0
 }
+"""
+
 MODEL_WEIGHTS = {
     "gpt-4o": 1.5,          # Tier 1 - Smartest
     "deepseek-r1": 1.5,     # Tier 1 - Strong reasoning
@@ -269,11 +266,9 @@ MODEL_WEIGHTS = {
     "gemini-flash": 1.2,    # Tier 2 - Fast
     "llama3.3-70b": 1.0,    # Tier 3 - Baseline
     "default": 1.0
-    }
-"""
+}
 
 async def multi_model_consensus(
-    
     symbol: str,
     market_name: str,
     price: float,
@@ -401,6 +396,8 @@ Provide your trading analysis in the specified JSON format."""
             else "🤔 WEAK — Model Disagreement"
         ),
         "timestamp": datetime.now().isoformat(),
+    }
+
     }
 
     }
