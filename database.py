@@ -2,7 +2,10 @@ import datetime
 from sqlalchemy import create_engine, Column, Integer, String, Float, Boolean, DateTime, Text
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
-DB_PATH = "sqlite:///BlackMagicAI_bot.db"
+import os
+db_dir = os.getenv("DATA_DIR", ".")
+DB_PATH = f"sqlite:///{db_dir}/BlackMagicAI_bot.db"
+
 engine = create_engine(DB_PATH, echo=False)
 SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
 
