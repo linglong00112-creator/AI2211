@@ -1,29 +1,28 @@
 import datetime
+import os
 from sqlalchemy import create_engine, Column, Integer, String, Float, Boolean, DateTime, Text
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
+import datetime
 
-import os
+# បង្កើតទីតាំងរក្សាទុក Database នៅកន្លែងដែលមានសុវត្ថិភាពក្នុង Railway
+base_dir = os.path.dirname(os.path.abspath(__file__))
+db_dir = os.path.join(base_dir, "data")
 
-# ទាញយកទីតាំងពី Railway Variables (បើគ្មានទេ វានឹងប្រើទីតាំងបច្ចុប្បន្ន)
-db_dir = os.getenv("DATA_DIR", ".")
-
-# បង្កើត Folder ដោយស្វ័យប្រវត្តិ ប្រសិនបើវាមិនទាន់មាន
+# បង្កើត Folder ដោយស្វ័យប្រវត្តិ
 if not os.path.exists(db_dir):
     os.makedirs(db_dir, exist_ok=True)
 
-# រៀបចំផ្លូវ (Path) ឲ្យបានត្រឹមត្រូវសម្រាប់ SQLAlchemy
+# កំណត់ទីតាំង Database
 db_path = os.path.join(db_dir, "BlackMagicAI_bot.db")
 DB_PATH = f"sqlite:///{db_path}"
 
 engine = create_engine(DB_PATH, echo=False)
 SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
 
-
-engine = create_engine(DB_PATH, echo=False)
-SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
-
 class Base(DeclarativeBase):
     pass
+
+# ... (ទុកកូដផ្សេងៗទៀតនៅខាងក្រោមឲ្យនៅដដែល)
 
 # -------------------- Models --------------------
 
